@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Log Viewer Web App v2.2</title>
+  <title>Log Viewer Web App v2.3</title>
   <style>
     :root{--bg:#0b1020;--panel:#121932;--panel2:#1a2447;--border:#2d3b73;--text:#e8ecff;--muted:#9fb0ea;--accent:#6ea8fe;--danger:#ff6b6b;--warn:#f7b955;--ok:#63d297;--chip:#24325f;--active:#23356b}
     *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
     .app{display:grid;grid-template-rows:auto auto 1fr;height:100vh}.topbar{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#121932,#0f1630)}
-    .title{font-size:20px;font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:3px}.toolbar{display:grid;grid-template-columns:240px 180px 180px 170px 1fr auto auto auto;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);background:#0f1630}
+    .title{font-size:20px;font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:3px}.toolbar{display:grid;grid-template-columns:240px 180px 180px 1fr auto auto auto;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);background:#0f1630}
     .toolbar input,.toolbar select,.toolbar button,.file-btn{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);outline:none}.toolbar button,.file-btn,#copyPrettyBtn{cursor:pointer;background:linear-gradient(180deg,#1d2b57,#18244a)}
     .file-btn{display:inline-flex;align-items:center;justify-content:center}.layout{display:grid;grid-template-columns:400px 1fr 440px;min-height:0}.panel{min-height:0;border-right:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column}.panel:last-child{border-right:none}
     .panel-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;background:#101734}.panel-title{font-size:14px;font-weight:700}.panel-meta{font-size:12px;color:var(--muted)}.scroll{overflow:auto;min-height:0}
@@ -25,14 +25,13 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div><div class="title">Log Viewer Web App v2.2</div><div class="sub">保留 CSV 載入、xrequestId 群組與 timeline，並新增 SAP OData / pseudo JSON 寬鬆解析。</div></div>
+    <div><div class="title">Log Viewer Web App v2.3</div><div class="sub">保留 CSV 載入、xrequestId 群組與 timeline；中間固定顯示 Raw，右側自動 Pretty 結構化解析。</div></div>
     <label class="file-btn" for="fileInput">載入 CSV</label><button id="clearBtn">清空資料</button><button id="exportGroupBtn">匯出目前群組</button><input id="fileInput" type="file" accept=".csv" multiple />
   </div>
   <div class="toolbar">
     <input id="searchInput" placeholder="搜尋 xrequestId、API、Exception、Vendor、PO..." />
     <select id="severityFilter"><option value="problem">預設：問題群組</option><option value="all">全部群組</option><option value="error">只有 ERROR 群組</option><option value="warn">只有 WARNING 群組</option></select>
     <select id="containerFilter"><option value="ALL">全部 Container</option></select>
-    <select id="detailMode"><option value="pretty">詳細區顯示 Pretty</option><option value="raw">詳細區顯示 Raw</option></select>
     <div></div><button id="sortBtn">時間：新 → 舊</button><button id="showAllLogsBtn">查看全部群組</button><button id="showProblemBtn">查看問題群組</button>
   </div>
   <div class="layout">
@@ -47,7 +46,7 @@
       <div class="scroll" id="groupList"></div><div class="footer-note">先看群組再看細節，比逐筆翻 log 更接近 L1 實務流程。</div>
     </div>
     <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Timeline / 詳細內容</div><div class="panel-meta" id="timelineMeta">請先選擇左側一個群組</div></div><button id="formatBtn">選中單筆轉 JSON/XML</button></div>
+      <div class="panel-header"><div><div class="panel-title">Timeline / 詳細內容</div><div class="panel-meta" id="timelineMeta">請先選擇左側一個群組</div></div></div>
       <div class="scroll" id="timelineList"></div>
     </div>
     <div class="panel">
@@ -71,7 +70,7 @@
 </div>
 <script>
 const state={rows:[],groups:[],filteredGroups:[],selectedGroup:null,selectedRow:null,selectedGroupRows:[],sortDesc:true,showAllLogsMode:false,lastStructured:null};
-const el={fileInput:document.getElementById('fileInput'),clearBtn:document.getElementById('clearBtn'),exportGroupBtn:document.getElementById('exportGroupBtn'),searchInput:document.getElementById('searchInput'),severityFilter:document.getElementById('severityFilter'),containerFilter:document.getElementById('containerFilter'),detailMode:document.getElementById('detailMode'),sortBtn:document.getElementById('sortBtn'),showAllLogsBtn:document.getElementById('showAllLogsBtn'),showProblemBtn:document.getElementById('showProblemBtn'),totalCount:document.getElementById('totalCount'),errorCount:document.getElementById('errorCount'),warnCount:document.getElementById('warnCount'),requestCount:document.getElementById('requestCount'),groupMeta:document.getElementById('groupMeta'),groupList:document.getElementById('groupList'),timelineMeta:document.getElementById('timelineMeta'),timelineList:document.getElementById('timelineList'),metaPane:document.getElementById('metaPane'),structuredPane:document.getElementById('structuredPane'),formatBtn:document.getElementById('formatBtn'),summaryFormat:document.getElementById('summaryFormat'),summaryStatus:document.getElementById('summaryStatus'),summaryAsn:document.getElementById('summaryAsn'),summaryPo:document.getElementById('summaryPo'),summaryMessage:document.getElementById('summaryMessage'),copyPrettyBtn:document.getElementById('copyPrettyBtn')};
+const el={fileInput:document.getElementById('fileInput'),clearBtn:document.getElementById('clearBtn'),exportGroupBtn:document.getElementById('exportGroupBtn'),searchInput:document.getElementById('searchInput'),severityFilter:document.getElementById('severityFilter'),containerFilter:document.getElementById('containerFilter'),sortBtn:document.getElementById('sortBtn'),showAllLogsBtn:document.getElementById('showAllLogsBtn'),showProblemBtn:document.getElementById('showProblemBtn'),totalCount:document.getElementById('totalCount'),errorCount:document.getElementById('errorCount'),warnCount:document.getElementById('warnCount'),requestCount:document.getElementById('requestCount'),groupMeta:document.getElementById('groupMeta'),groupList:document.getElementById('groupList'),timelineMeta:document.getElementById('timelineMeta'),timelineList:document.getElementById('timelineList'),metaPane:document.getElementById('metaPane'),structuredPane:document.getElementById('structuredPane'),summaryFormat:document.getElementById('summaryFormat'),summaryStatus:document.getElementById('summaryStatus'),summaryAsn:document.getElementById('summaryAsn'),summaryPo:document.getElementById('summaryPo'),summaryMessage:document.getElementById('summaryMessage'),copyPrettyBtn:document.getElementById('copyPrettyBtn')};
 function escapeHtml(str=''){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 function highlight(text=''){return escapeHtml(text).replace(/\bERROR\b/gi,'<span class="error">$&</span>').replace(/\bWARN(?:ING)?\b/gi,'<span class="warn">$&</span>').replace(/\b[A-Za-z]+Exception\b|\bException\b/g,'<span class="exception">$&</span>').replace(/\bxrequestId\s*=\s*[0-9a-fA-F\-]{8,}\b/gi,'<span class="xid">$&</span>').replace(/\/api\/[A-Za-z0-9_\-/]+/g,'<span class="api">$&</span>').replace(/\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?\b/g,'<span class="time">$&</span>')}
 function normalizeLevel(level,message){const lv=(level||'').trim().toUpperCase();if(lv)return lv;const msg=(message||'').toUpperCase();if(msg.includes(' ERROR '))return'ERROR';if(msg.includes(' WARNING ')||msg.includes(' WARN '))return'WARNING';if(msg.includes(' INFO '))return'INFO';if(msg.includes(' DEBUG '))return'DEBUG';return'OTHER'}
@@ -129,28 +128,110 @@ function updateContainerFilter(){const current=el.containerFilter.value;const co
 function applyFilters(){const q=el.searchInput.value.trim().toLowerCase();const severity=el.severityFilter.value;const ct=el.containerFilter.value;let groups=[...state.groups];if(!state.showAllLogsMode)groups=groups.filter(g=>g.problem);if(severity==='error')groups=groups.filter(g=>g.errorCount>0);else if(severity==='warn')groups=groups.filter(g=>g.warnCount>0&&g.errorCount===0);else if(severity==='problem')groups=groups.filter(g=>g.problem);if(ct!=='ALL')groups=groups.filter(g=>g.containers.includes(ct));if(q)groups=groups.filter(g=>`${g.key} ${g.xrequestId} ${g.preview} ${g.containers.join(' ')}`.toLowerCase().includes(q));groups.sort((a,b)=>{const ta=a.rows[0]?.parsedTime?a.rows[0].parsedTime.getTime():0;const tb=b.rows[0]?.parsedTime?b.rows[0].parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});state.filteredGroups=groups;renderStats();renderGroups()}
 function renderStats(){el.totalCount.textContent=state.rows.length;el.errorCount.textContent=state.rows.filter(r=>r.level==='ERROR').length;el.warnCount.textContent=state.rows.filter(r=>r.level==='WARNING').length;el.requestCount.textContent=[...new Set(state.rows.map(r=>r.xrequestId).filter(Boolean))].length;el.groupMeta.textContent=`目前顯示 ${state.filteredGroups.length} / ${state.groups.length} 個群組，已載入 ${new Set(state.rows.map(r=>r.sourceFile)).size} 個檔案`}
 function renderGroups(){if(!state.filteredGroups.length){el.groupList.innerHTML='<div class="empty">目前沒有符合條件的群組</div>';return}el.groupList.innerHTML=state.filteredGroups.map(group=>{const active=state.selectedGroup?.key===group.key?'active':'';const primaryChip=group.errorCount>0?`<span class="chip error">ERROR ${group.errorCount}</span>`:group.warnCount>0?`<span class="chip warn">WARN ${group.warnCount}</span>`:`<span class="chip ok">一般</span>`;const xidText=group.xrequestId||'無 xrequestId（單筆群組）';return `<div class="group-item ${active}" data-key="${escapeHtml(group.key)}"><div class="row1"><div style="font-weight:700">${escapeHtml(xidText)}</div>${primaryChip}</div><div class="row2"><span>${escapeHtml(group.latestTime||'無時間')}</span><span>${escapeHtml(group.containers.join(', ')||'無 container')}</span></div><div class="row2"><span class="chip info">筆數 ${group.count}</span><span class="chip info">WARN ${group.warnCount}</span></div><div class="preview">${escapeHtml(group.preview)}</div></div>`}).join('');[...el.groupList.querySelectorAll('.group-item')].forEach(node=>node.addEventListener('click',()=>{state.selectedGroup=state.filteredGroups.find(g=>g.key===node.dataset.key);state.selectedRow=null;renderGroups();renderTimeline();renderRowDetail()}))}
-function renderTimeline(){if(!state.selectedGroup){el.timelineMeta.textContent='請先選擇左側一個群組';el.timelineList.innerHTML='<div class="empty">尚未選擇群組</div>';state.selectedGroupRows=[];return}const rows=[...state.selectedGroup.rows].sort((a,b)=>{const ta=a.parsedTime?a.parsedTime.getTime():0;const tb=b.parsedTime?b.parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});state.selectedGroupRows=rows;const xidText=state.selectedGroup.xrequestId||'無 xrequestId';el.timelineMeta.textContent=`${xidText}｜${rows.length} 筆 timeline`;el.timelineList.innerHTML=rows.map(row=>{const active=state.selectedRow?.id===row.id?'active':'';const chipClass=row.level==='ERROR'?'error':row.level==='WARNING'?'warn':'info';const body=el.detailMode.value==='raw'?row.message:prettyMessage(row.message);return `<div class="timeline-item ${active}" data-id="${row.id}"><div class="row1"><div style="font-weight:700">${escapeHtml(row.time||'無時間')}</div><span class="chip ${chipClass}">${escapeHtml(row.level)}</span></div><div class="row2"><span>${escapeHtml(row.container||'無 container')}</span><span>${escapeHtml(row.sourceFile||'')}</span></div><div class="content" style="padding:10px 0 0 0">${highlight(body)}</div></div>`}).join('');[...el.timelineList.querySelectorAll('.timeline-item')].forEach(node=>node.addEventListener('click',()=>{state.selectedRow=rows.find(r=>r.id===node.dataset.id);renderTimeline();renderRowDetail()}))}
+function renderTimeline(){if(!state.selectedGroup){el.timelineMeta.textContent='請先選擇左側一個群組';el.timelineList.innerHTML='<div class="empty">尚未選擇群組</div>';state.selectedGroupRows=[];return}const rows=[...state.selectedGroup.rows].sort((a,b)=>{const ta=a.parsedTime?a.parsedTime.getTime():0;const tb=b.parsedTime?b.parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});state.selectedGroupRows=rows;const xidText=state.selectedGroup.xrequestId||'無 xrequestId';el.timelineMeta.textContent=`${xidText}｜${rows.length} 筆 timeline`;el.timelineList.innerHTML=rows.map(row=>{const active=state.selectedRow?.id===row.id?'active':'';const chipClass=row.level==='ERROR'?'error':row.level==='WARNING'?'warn':'info';const body=row.message;return `<div class="timeline-item ${active}" data-id="${row.id}"><div class="row1"><div style="font-weight:700">${escapeHtml(row.time||'無時間')}</div><span class="chip ${chipClass}">${escapeHtml(row.level)}</span></div><div class="row2"><span>${escapeHtml(row.container||'無 container')}</span><span>${escapeHtml(row.sourceFile||'')}</span></div><div class="content" style="padding:10px 0 0 0">${highlight(body)}</div></div>`}).join('');[...el.timelineList.querySelectorAll('.timeline-item')].forEach(node=>node.addEventListener('click',()=>{state.selectedRow=rows.find(r=>r.id===node.dataset.id);renderTimeline();renderRowDetail()}))}
 function buildMetaHtml(row){const pairs=[['時間',row.time||''],['Container',row.container||''],['Level',row.level||''],['xrequestId',row.xrequestId||''],['來源檔案',row.sourceFile||''],['可疑/問題',row.problem?'是':'否']];return `<div class="meta-grid">${pairs.map(([k,v])=>`<div class="meta-key">${escapeHtml(k)}</div><div>${escapeHtml(v)}</div>`).join('')}</div>`}
 function getPath(obj,path){return path.reduce((acc,key)=>acc&&acc[key]!=null?acc[key]:null,obj)}
-function extractSummary(parsed,type){
-  if(type==='xml'){return {format:'XML',status:'XML',asn:'-',po:'-',message:'已解析 XML。'}}
-  const roots=[parsed,getPath(parsed,['d']),getPath(parsed,['response']),getPath(parsed,['data'])].filter(Boolean);
-  const first=(arr)=>Array.isArray(arr)&&arr.length?arr[0]:null;
-  let returnType='-',returnMessage='-',asnNumber='-',poSummary='-';
-  for(const root of roots){
-    const asnResults=getPath(root,['asnResult','results'])||getPath(root,['asnResult'])||getPath(root,['results'])||[];
-    const asnItem=Array.isArray(asnResults)?first(asnResults):asnResults;
-    if(asnItem&&asnItem.returnType) returnType=String(asnItem.returnType);
-    if(asnItem&&asnItem.returnMessage) returnMessage=String(asnItem.returnMessage);
-    if(asnItem&&asnItem.asnNumber) asnNumber=String(asnItem.asnNumber);
-    const details=getPath(root,['details','results'])||getPath(root,['details'])||[];
-    if(Array.isArray(details)&&details.length){
-      poSummary=details.slice(0,3).map(d=>`${d.poNumber||'-'}/${d.lineItem||'-'}/${d.shipQty||'-'}`).join('\n');
-      break;
-    }
+function extractSummary(parsed, type) {
+  if (type === 'xml') {
+    return {
+      format: 'XML',
+      status: 'XML',
+      asn: '-',
+      po: '-',
+      message: '已解析 XML。'
+    };
   }
-  const statusMap={S:'成功',E:'失敗',W:'警告',I:'資訊'};
-  return {format:type==='pseudo-json'?'Pseudo JSON':'JSON',status:statusMap[returnType]||returnType,asn:asnNumber,po:poSummary,message:returnMessage&&returnMessage!=='-'?returnMessage:'已完成結構化解析，但未抓到明確 returnMessage。'};
+
+  const roots = [
+    parsed,
+    getPath(parsed, ['d']),
+    getPath(parsed, ['response']),
+    getPath(parsed, ['data'])
+  ].filter(Boolean);
+
+  const first = (arr) => Array.isArray(arr) && arr.length ? arr[0] : null;
+
+  let returnType = '-';
+  let returnMessage = '-';
+  let asnNumber = '-';
+  let poSummary = '-';
+
+  for (const root of roots) {
+    const asnResults =
+      getPath(root, ['asnResult', 'results']) ||
+      getPath(root, ['asnResult']) ||
+      [];
+
+    const asnItem = Array.isArray(asnResults) ? first(asnResults) : asnResults;
+
+    if (asnItem?.returnType) returnType = String(asnItem.returnType);
+    if (asnItem?.returnMessage) returnMessage = String(asnItem.returnMessage);
+    if (asnItem?.asnNumber) asnNumber = String(asnItem.asnNumber);
+
+    const asnDetails =
+      getPath(root, ['details', 'results']) ||
+      getPath(root, ['details']) ||
+      [];
+
+    if (Array.isArray(asnDetails) && asnDetails.length) {
+      poSummary = asnDetails
+        .slice(0, 3)
+        .map(d => `${d.poNumber || '-'} / ${d.lineItem || '-'} / ${d.shipQty || '-'}`)
+        .join('\n');
+    }
+
+    const poResults =
+      getPath(root, ['poResult', 'results']) ||
+      getPath(root, ['poResult']) ||
+      [];
+
+    const poResultItem = Array.isArray(poResults) ? first(poResults) : poResults;
+
+    if (poResultItem?.returnType) returnType = String(poResultItem.returnType);
+    if (poResultItem?.returnMessage) returnMessage = String(poResultItem.returnMessage);
+
+    const poNumber = root.poNumber || '-';
+    const poItems = Array.isArray(root.poItems)
+      ? root.poItems
+      : (getPath(root, ['poItems']) || []);
+
+    if (Array.isArray(poItems) && poItems.length) {
+      const lines = poItems.slice(0, 3).map(item => {
+        const confirmations = Array.isArray(item.confirmations) ? item.confirmations : [];
+        const firstCfm = confirmations[0] || {};
+        const qty =
+          firstCfm.cofmQty ??
+          firstCfm.qty ??
+          item.shipQty ??
+          '-';
+
+        return `${item.poNumber || poNumber || '-'} / ${item.lineItem || '-'} / ${qty}`;
+      });
+
+      poSummary = lines.join('\n');
+    }
+
+    if (root.returnType && returnType === '-') returnType = String(root.returnType);
+    if (root.message && returnMessage === '-') returnMessage = String(root.message);
+  }
+
+  const statusMap = {
+    S: '成功',
+    E: '失敗',
+    W: '警告',
+    I: '資訊'
+  };
+
+  return {
+    format: type === 'pseudo-json' ? 'Pseudo JSON' : 'JSON',
+    status: statusMap[returnType] || returnType || '-',
+    asn: asnNumber,
+    po: poSummary,
+    message:
+      returnMessage && returnMessage !== '-'
+        ? returnMessage
+        : '已完成結構化解析。'
+  };
 }
 function resetSummary(){el.summaryFormat.textContent='-';el.summaryStatus.textContent='-';el.summaryAsn.textContent='-';el.summaryPo.textContent='-';el.summaryMessage.textContent='尚未產生摘要。'}
 function renderRowDetail(forceFormat=false){if(!state.selectedRow){el.metaPane.innerHTML='<div class="empty">請先點選中間 timeline 中的一筆</div>';el.structuredPane.textContent='尚未轉換';state.lastStructured=null;resetSummary();return}el.metaPane.innerHTML=buildMetaHtml(state.selectedRow);const structured=tryParseStructured(state.selectedRow.message);state.lastStructured=structured;if(structured.summary){el.summaryFormat.textContent=structured.summary.format;el.summaryStatus.textContent=structured.summary.status;el.summaryAsn.textContent=structured.summary.asn;el.summaryPo.textContent=structured.summary.po;el.summaryMessage.textContent=structured.summary.message}else resetSummary();el.structuredPane.textContent=structured.type==='text'?(forceFormat?'這筆 message 沒有可格式化的 JSON/XML/pseudo JSON payload。\n\n原始內容：\n'+structured.value:'這筆 message 目前顯示原始文字。可按「選中單筆轉 JSON/XML」再試一次。\n\n原始內容：\n'+structured.value):structured.value}
@@ -158,7 +239,7 @@ function exportCurrentGroup(){if(!state.selectedGroupRows.length){alert('請先�
 async function loadFiles(files){const newRows=[];for(const file of files){const text=await file.text();newRows.push(...parseCsvText(text,file.name))}state.rows.push(...newRows);state.groups=groupRows(state.rows);updateContainerFilter();applyFilters()}
 el.fileInput.addEventListener('change',async e=>{const files=[...(e.target.files||[])];if(!files.length)return;await loadFiles(files);e.target.value=''})
 el.clearBtn.addEventListener('click',()=>{state.rows=[];state.groups=[];state.filteredGroups=[];state.selectedGroup=null;state.selectedRow=null;state.selectedGroupRows=[];state.lastStructured=null;updateContainerFilter();applyFilters();renderTimeline();renderRowDetail()})
-el.exportGroupBtn.addEventListener('click',exportCurrentGroup);el.searchInput.addEventListener('input',applyFilters);el.severityFilter.addEventListener('change',applyFilters);el.containerFilter.addEventListener('change',applyFilters);el.detailMode.addEventListener('change',renderTimeline);el.sortBtn.addEventListener('click',()=>{state.sortDesc=!state.sortDesc;el.sortBtn.textContent=state.sortDesc?'時間：新 → 舊':'時間：舊 → 新';state.groups=groupRows(state.rows);applyFilters();renderTimeline();renderRowDetail()});el.showAllLogsBtn.addEventListener('click',()=>{state.showAllLogsMode=true;applyFilters()});el.showProblemBtn.addEventListener('click',()=>{state.showAllLogsMode=false;applyFilters()});el.formatBtn.addEventListener('click',()=>{if(!state.selectedRow){alert('請先在中間選一筆 timeline log');return}renderRowDetail(true)});el.copyPrettyBtn.addEventListener('click',async()=>{if(!state.lastStructured||state.lastStructured.type==='text'){alert('目前沒有可複製的 Pretty 結果');return}try{await navigator.clipboard.writeText(state.lastStructured.value);alert('已複製 Pretty 內容')}catch{alert('複製失敗，請改用手動複製')}});
+el.exportGroupBtn.addEventListener('click',exportCurrentGroup);el.searchInput.addEventListener('input',applyFilters);el.severityFilter.addEventListener('change',applyFilters);el.containerFilter.addEventListener('change',applyFilters);el.sortBtn.addEventListener('click',()=>{state.sortDesc=!state.sortDesc;el.sortBtn.textContent=state.sortDesc?'時間：新 → 舊':'時間：舊 → 新';state.groups=groupRows(state.rows);applyFilters();renderTimeline();renderRowDetail()});el.showAllLogsBtn.addEventListener('click',()=>{state.showAllLogsMode=true;applyFilters()});el.showProblemBtn.addEventListener('click',()=>{state.showAllLogsMode=false;applyFilters()});el.copyPrettyBtn.addEventListener('click',async()=>{if(!state.lastStructured||state.lastStructured.type==='text'){alert('目前沒有可複製的 Pretty 結果');return}try{await navigator.clipboard.writeText(state.lastStructured.value);alert('已複製 Pretty 內容')}catch{alert('複製失敗，請改用手動複製')}});
 renderStats();renderGroups();renderTimeline();renderRowDetail();
 </script>
 </body>
