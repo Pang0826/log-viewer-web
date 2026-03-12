@@ -3,83 +3,638 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Log Viewer Web App v2</title>
+  <title>Log Viewer Web App v2.1</title>
   <style>
-    :root{--bg:#0b1020;--panel:#121932;--panel2:#1a2447;--border:#2d3b73;--text:#e8ecff;--muted:#9fb0ea;--accent:#6ea8fe;--danger:#ff6b6b;--warn:#f7b955;--ok:#63d297;--chip:#24325f;--active:#23356b}
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-    .app{display:grid;grid-template-rows:auto auto 1fr;height:100vh}.topbar{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#121932,#0f1630)}
-    .title{font-size:20px;font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:3px}.toolbar{display:grid;grid-template-columns:240px 180px 180px 170px 1fr auto auto auto;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);background:#0f1630}
-    .toolbar input,.toolbar select,.toolbar button,.file-btn{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);outline:none}.toolbar button,.file-btn{cursor:pointer;background:linear-gradient(180deg,#1d2b57,#18244a)}
-    .file-btn{display:inline-flex;align-items:center;justify-content:center}.layout{display:grid;grid-template-columns:400px 1fr 420px;min-height:0}.panel{min-height:0;border-right:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column}.panel:last-child{border-right:none}
-    .panel-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;background:#101734}.panel-title{font-size:14px;font-weight:700}.panel-meta{font-size:12px;color:var(--muted)}.scroll{overflow:auto;min-height:0}
-    .group-item,.timeline-item{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer}.group-item:hover,.timeline-item:hover{background:#17214a}.group-item.active,.timeline-item.active{background:var(--active)}
-    .row1,.row2{display:flex;align-items:center;justify-content:space-between;gap:10px}.row2{margin-top:8px;font-size:12px;color:var(--muted)}.preview{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:11px;background:var(--chip);color:var(--text);border:1px solid rgba(255,255,255,.08);white-space:nowrap}.chip.error{color:#ffd6d6;border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.12)}.chip.warn{color:#ffe6b8;border-color:rgba(247,185,85,.35);background:rgba(247,185,85,.12)}.chip.info{color:#dfe7ff}.chip.ok{color:#d9ffea;border-color:rgba(99,210,151,.35);background:rgba(99,210,151,.12)}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:#101734}.stat{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:12px}.stat .k{font-size:12px;color:var(--muted)}.stat .v{font-size:20px;font-weight:700;margin-top:4px}
-    .content{padding:14px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.55;font-size:13px}.content .error{color:var(--danger);font-weight:700}.content .warn{color:var(--warn);font-weight:700}.content .exception{color:#ff8787;font-weight:700}.content .xid{color:var(--accent);font-weight:700}.content .api{color:#b992ff}.content .time{color:var(--ok)}
-    .meta-grid{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;padding:14px;font-size:13px}.meta-key{color:var(--muted)}.empty{padding:24px;color:var(--muted);text-align:center}input[type=file]{display:none}.footer-note{padding:10px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);background:#101734}
+    :root {
+      --bg: #07122b;
+      --bg2: #0d1c43;
+      --panel: #102252;
+      --panel2: #152c67;
+      --line: #27407f;
+      --text: #eef3ff;
+      --muted: #a9b8e8;
+      --ok: #2ecc71;
+      --warn: #f5b942;
+      --err: #ff6b6b;
+      --info: #6ea8ff;
+      --btn: #21418e;
+      --btnHover: #2b56b6;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      background: linear-gradient(180deg, var(--bg), #081734 40%, #07122b);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .title h1 {
+      margin: 0 0 6px;
+      font-size: 40px;
+      line-height: 1.1;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 1px solid #3c5db4;
+      background: linear-gradient(180deg, var(--btn), #173472);
+      color: white;
+      border-radius: 14px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    button:hover { background: linear-gradient(180deg, var(--btnHover), #21418e); }
+    button.secondary { background: white; color: #112454; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr 1fr;
+      gap: 14px;
+      min-height: 72vh;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(18, 38, 86, 0.98), rgba(10, 25, 61, 0.98));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .panel-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .panel-body {
+      padding: 14px 16px;
+      flex: 1;
+      overflow: auto;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #091837;
+      color: var(--text);
+      padding: 14px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 15px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .card .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .card .value {
+      font-size: 22px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      margin-bottom: 10px;
+    }
+
+    .badge.ok { color: #dfffea; background: rgba(46, 204, 113, 0.18); border-color: rgba(46,204,113,0.35); }
+    .badge.warn { color: #fff4d6; background: rgba(245, 185, 66, 0.18); border-color: rgba(245,185,66,0.35); }
+    .badge.err { color: #ffe1e1; background: rgba(255, 107, 107, 0.18); border-color: rgba(255,107,107,0.35); }
+    .badge.info { color: #dce8ff; background: rgba(110, 168, 255, 0.18); border-color: rgba(110,168,255,0.35); }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: Consolas, Monaco, monospace;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .muted { color: var(--muted); }
+    .danger { color: #ffb7b7; }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .title h1 { font-size: 32px; }
+    }
   </style>
 </head>
 <body>
-<div class="app">
-  <div class="topbar">
-    <div><div class="title">Log Viewer Web App v2</div><div class="sub">先看問題 xrequestId 群組，再點進 timeline 與 payload。適合一次載入多個 CSV 做總覽與深查。</div></div>
-    <label class="file-btn" for="fileInput">載入 CSV</label><button id="clearBtn">清空資料</button><button id="exportGroupBtn">匯出目前群組</button><input id="fileInput" type="file" accept=".csv" multiple />
-  </div>
-  <div class="toolbar">
-    <input id="searchInput" placeholder="搜尋 xrequestId、API、Exception、Vendor、PO..." />
-    <select id="severityFilter"><option value="problem">預設：問題群組</option><option value="all">全部群組</option><option value="error">只有 ERROR 群組</option><option value="warn">只有 WARNING 群組</option></select>
-    <select id="containerFilter"><option value="ALL">全部 Container</option></select>
-    <select id="detailMode"><option value="pretty">詳細區顯示 Pretty</option><option value="raw">詳細區顯示 Raw</option></select>
-    <div></div><button id="sortBtn">時間：新 → 舊</button><button id="showAllLogsBtn">查看全部群組</button><button id="showProblemBtn">查看問題群組</button>
-  </div>
-  <div class="layout">
-    <div class="panel">
-      <div class="stats">
-        <div class="stat"><div class="k">總筆數</div><div class="v" id="totalCount">0</div></div>
-        <div class="stat"><div class="k">ERROR</div><div class="v" id="errorCount">0</div></div>
-        <div class="stat"><div class="k">WARNING</div><div class="v" id="warnCount">0</div></div>
-        <div class="stat"><div class="k">xrequestId</div><div class="v" id="requestCount">0</div></div>
+  <div class="app">
+    <div class="header">
+      <div class="title">
+        <h1>Log Viewer Web App v2.1</h1>
+        <p>支援一般 JSON、XML，以及 SAP OData / pseudo JSON 格式的 POST Response / Request Body 自動寬鬆解析。</p>
       </div>
-      <div class="panel-header"><div><div class="panel-title">問題 xrequestId 群組</div><div class="panel-meta" id="groupMeta">尚未載入資料</div></div></div>
-      <div class="scroll" id="groupList"></div><div class="footer-note">先看群組再看細節，比逐筆翻 log 更接近 L1 實務流程。</div>
+      <div class="toolbar">
+        <button id="loadSampleBtn">載入範例</button>
+        <button id="parseBtn">轉成 JSON / XML</button>
+        <button id="clearBtn" class="secondary">清空</button>
+        <button id="copyPrettyBtn">複製 Pretty JSON</button>
+      </div>
     </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Timeline / 詳細內容</div><div class="panel-meta" id="timelineMeta">請先選擇左側一個群組</div></div><button id="formatBtn">選中單筆轉 JSON/XML</button></div>
-      <div class="scroll" id="timelineList"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">單筆資訊 / 結構化 payload</div><div class="panel-meta">當某筆 message 內有 JSON 或 XML 時，會顯示格式化結果</div></div></div>
-      <div class="scroll"><div id="metaPane" class="empty">尚未選擇 timeline 單筆</div><div id="structuredPane" class="content">尚未轉換</div></div>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>原始 Log / Message</h2>
+          <p>把整段 log 貼進來即可，不需要先手動整理。</p>
+        </div>
+        <div class="panel-body">
+          <textarea id="rawInput" placeholder="貼上完整 log，例如包含時間、INFO、xrequestId、POST Response: {d:{...}}"></textarea>
+          <div class="action-row">
+            <button id="extractBtn">只抓 Response Payload</button>
+            <button id="formatRawBtn">整理原始內容</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Pretty 結構化結果</h2>
+          <p>若是 pseudo JSON，會先做寬鬆轉換再解析。</p>
+        </div>
+        <div class="panel-body">
+          <div id="statusBadge" class="badge info">尚未解析</div>
+          <pre id="prettyOutput">這裡會顯示結構化結果。</pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>摘要 / 關鍵欄位</h2>
+          <p>自動整理 ASN、PO、Line Item、Ship Qty、Return Message 等資訊。</p>
+        </div>
+        <div class="panel-body">
+          <div class="cards">
+            <div class="card">
+              <div class="label">解析格式</div>
+              <div class="value" id="formatType">-</div>
+            </div>
+            <div class="card">
+              <div class="label">狀態</div>
+              <div class="value" id="returnType">-</div>
+            </div>
+            <div class="card">
+              <div class="label">ASN Number</div>
+              <div class="value" id="asnNumber">-</div>
+            </div>
+            <div class="card">
+              <div class="label">訊息</div>
+              <div class="value" id="returnMessage" style="font-size:18px;">-</div>
+            </div>
+          </div>
+          <div class="summary-list" id="summaryList">
+            <div class="summary-item muted">尚未產生摘要。</div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
-</div>
-<script>
-const state={rows:[],groups:[],filteredGroups:[],selectedGroup:null,selectedRow:null,selectedGroupRows:[],sortDesc:true,showAllLogsMode:false};
-const el={fileInput:document.getElementById('fileInput'),clearBtn:document.getElementById('clearBtn'),exportGroupBtn:document.getElementById('exportGroupBtn'),searchInput:document.getElementById('searchInput'),severityFilter:document.getElementById('severityFilter'),containerFilter:document.getElementById('containerFilter'),detailMode:document.getElementById('detailMode'),sortBtn:document.getElementById('sortBtn'),showAllLogsBtn:document.getElementById('showAllLogsBtn'),showProblemBtn:document.getElementById('showProblemBtn'),totalCount:document.getElementById('totalCount'),errorCount:document.getElementById('errorCount'),warnCount:document.getElementById('warnCount'),requestCount:document.getElementById('requestCount'),groupMeta:document.getElementById('groupMeta'),groupList:document.getElementById('groupList'),timelineMeta:document.getElementById('timelineMeta'),timelineList:document.getElementById('timelineList'),metaPane:document.getElementById('metaPane'),structuredPane:document.getElementById('structuredPane'),formatBtn:document.getElementById('formatBtn')};
-function escapeHtml(str=''){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-function highlight(text=''){return escapeHtml(text).replace(/\bERROR\b/gi,'<span class="error">$&</span>').replace(/\bWARN(?:ING)?\b/gi,'<span class="warn">$&</span>').replace(/\b[A-Za-z]+Exception\b|\bException\b/g,'<span class="exception">$&</span>').replace(/\bxrequestId\s*=\s*[0-9a-fA-F\-]{8,}\b/gi,'<span class="xid">$&</span>').replace(/\/api\/[A-Za-z0-9_\-/]+/g,'<span class="api">$&</span>').replace(/\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?\b/g,'<span class="time">$&</span>')}
-function normalizeLevel(level,message){const lv=(level||'').trim().toUpperCase();if(lv)return lv;const msg=(message||'').toUpperCase();if(msg.includes(' ERROR '))return'ERROR';if(msg.includes(' WARNING ')||msg.includes(' WARN '))return'WARNING';if(msg.includes(' INFO '))return'INFO';if(msg.includes(' DEBUG '))return'DEBUG';return'OTHER'}
-function extractXRequestId(row){const direct=row.xrequestId||row.XRequestId||row.requestId||row.RequestId||'';if(direct)return direct.trim();const msg=row.message||'';let m=msg.match(/\bxrequestId\s*=\s*([0-9a-fA-F\-]{8,})/i);if(m)return m[1];m=msg.match(/\brequestId\s*=\s*([0-9a-fA-F\-]{8,})/i);return m?m[1]:''}
-function parseDateFlex(text){if(!text)return null;const t=String(text).trim();const direct=Date.parse(t);if(!Number.isNaN(direct))return new Date(direct);let m=t.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)/);if(m){const d=new Date(m[1].replace(' ','T'));if(!Number.isNaN(d.getTime()))return d}m=t.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?/);if(m){let hour=Number(m[5]);if(m[4]==='下午'&&hour<12)hour+=12;if(m[4]==='上午'&&hour===12)hour=0;return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),hour,Number(m[6]),Number(m[7]),Number(m[8]||0))}return null}
-function tryParseStructured(text){const raw=(text||'').trim();if(!raw)return{type:'text',value:''};try{return{type:'json',value:JSON.stringify(JSON.parse(raw),null,2)}}catch{}const starts=[raw.indexOf('{'),raw.indexOf('[')].filter(v=>v>=0);if(starts.length){const candidate=raw.slice(Math.min(...starts)).trim();try{return{type:'json',value:JSON.stringify(JSON.parse(candidate),null,2)}}catch{}}const xmlStart=raw.indexOf('<');if(xmlStart>=0){const candidate=raw.slice(xmlStart).trim();try{const parser=new DOMParser();const doc=parser.parseFromString(candidate,'application/xml');if(!doc.querySelector('parsererror'))return{type:'xml',value:new XMLSerializer().serializeToString(doc).replace(/></g,'>\n<')}}catch{}}return{type:'text',value:raw}}
-function prettyMessage(text){const parsed=tryParseStructured(text);if(parsed.type!=='text')return parsed.value;return String(text||'').replace(/(\bINFO\b)/g,'\n$1').replace(/(\bERROR\b)/g,'\n$1').replace(/(\bWARN(?:ING)?\b)/g,'\n$1').replace(/(Exception:)/g,'\n$1').replace(/(InnerException:)/g,'\n$1').replace(/(Handling request:)/g,'\n$1').replace(/(Handled request:)/g,'\n$1').replace(/(Request Body:)/g,'\n$1').replace(/(Response Body:)/g,'\n$1').replace(/(\/api\/)/g,'\n$1').replace(/\n{3,}/g,'\n\n').trim()}
-function splitCsvLineSmart(line){const first=line.indexOf(',');const second=line.indexOf(',',first+1);const third=line.indexOf(',',second+1);if(first===-1||second===-1||third===-1)return null;return[line.slice(0,first),line.slice(first+1,second),line.slice(second+1,third),line.slice(third+1)]}
-function parseCsvText(text,sourceName){const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean);if(!lines.length)return[];const header=lines[0].toLowerCase();const looksLikeAzure=header.includes('timegenerated')||header.includes('containername')||header.includes('logmessage');const result=[];for(let i=1;i<lines.length;i++){const line=lines[i];if(!line.trim())continue;let row;const smart=splitCsvLineSmart(line);if(looksLikeAzure&&smart){row={time:smart[0],container:smart[1],level:smart[2],message:smart[3]}}else{const cells=line.split(',');row={time:cells[0]||'',container:cells[1]||'',level:cells[2]||'',message:cells.slice(3).join(',')}}row.message=(row.message||'').trim();row.level=normalizeLevel(row.level,row.message);row.xrequestId=extractXRequestId(row);row.parsedTime=parseDateFlex(row.time)||parseDateFlex(row.message);row.sourceFile=sourceName;row.id=`${sourceName}::${i}`;row.problem=row.level==='ERROR'||row.level==='WARNING'||/exception|failed|timeout|locked|invalid|cannot|denied/i.test(row.message);result.push(row)}return result}
-function groupRows(rows){const map=new Map();for(const row of rows){const key=row.xrequestId||`NO_XREQUEST::${row.container||'UNKNOWN'}::${row.id}`;if(!map.has(key))map.set(key,[]);map.get(key).push(row)}return [...map.entries()].map(([key,items])=>{items.sort((a,b)=>{const ta=a.parsedTime?a.parsedTime.getTime():0;const tb=b.parsedTime?b.parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});const errorCount=items.filter(r=>r.level==='ERROR').length;const warnCount=items.filter(r=>r.level==='WARNING').length;const containers=[...new Set(items.map(r=>r.container).filter(Boolean))];return{key,xrequestId:items[0].xrequestId||'',rows:items,count:items.length,errorCount,warnCount,problem:items.some(r=>r.problem),containers,latestTime:items[0]?.time||'',earliestTime:items[items.length-1]?.time||'',preview:items.find(r=>r.problem)?.message||items[0]?.message||''}})}
-function updateContainerFilter(){const current=el.containerFilter.value;const containers=[...new Set(state.rows.map(r=>r.container).filter(Boolean))].sort();el.containerFilter.innerHTML='<option value="ALL">全部 Container</option>'+containers.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');if(containers.includes(current))el.containerFilter.value=current}
-function applyFilters(){const q=el.searchInput.value.trim().toLowerCase();const severity=el.severityFilter.value;const ct=el.containerFilter.value;let groups=[...state.groups];if(!state.showAllLogsMode)groups=groups.filter(g=>g.problem);if(severity==='error')groups=groups.filter(g=>g.errorCount>0);else if(severity==='warn')groups=groups.filter(g=>g.warnCount>0&&g.errorCount===0);else if(severity==='problem')groups=groups.filter(g=>g.problem);if(ct!=='ALL')groups=groups.filter(g=>g.containers.includes(ct));if(q)groups=groups.filter(g=>`${g.key} ${g.xrequestId} ${g.preview} ${g.containers.join(' ')}`.toLowerCase().includes(q));groups.sort((a,b)=>{const ta=a.rows[0]?.parsedTime?a.rows[0].parsedTime.getTime():0;const tb=b.rows[0]?.parsedTime?b.rows[0].parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});state.filteredGroups=groups;renderStats();renderGroups()}
-function renderStats(){el.totalCount.textContent=state.rows.length;el.errorCount.textContent=state.rows.filter(r=>r.level==='ERROR').length;el.warnCount.textContent=state.rows.filter(r=>r.level==='WARNING').length;el.requestCount.textContent=[...new Set(state.rows.map(r=>r.xrequestId).filter(Boolean))].length;el.groupMeta.textContent=`目前顯示 ${state.filteredGroups.length} / ${state.groups.length} 個群組，已載入 ${new Set(state.rows.map(r=>r.sourceFile)).size} 個檔案`}
-function renderGroups(){if(!state.filteredGroups.length){el.groupList.innerHTML='<div class="empty">目前沒有符合條件的群組</div>';return}el.groupList.innerHTML=state.filteredGroups.map(group=>{const active=state.selectedGroup?.key===group.key?'active':'';const primaryChip=group.errorCount>0?`<span class="chip error">ERROR ${group.errorCount}</span>`:group.warnCount>0?`<span class="chip warn">WARN ${group.warnCount}</span>`:`<span class="chip ok">一般</span>`;const xidText=group.xrequestId||'無 xrequestId（單筆群組）';return `<div class="group-item ${active}" data-key="${escapeHtml(group.key)}"><div class="row1"><div style="font-weight:700">${escapeHtml(xidText)}</div>${primaryChip}</div><div class="row2"><span>${escapeHtml(group.latestTime||'無時間')}</span><span>${escapeHtml(group.containers.join(', ')||'無 container')}</span></div><div class="row2"><span class="chip info">筆數 ${group.count}</span><span class="chip info">WARN ${group.warnCount}</span></div><div class="preview">${escapeHtml(group.preview)}</div></div>`}).join('');[...el.groupList.querySelectorAll('.group-item')].forEach(node=>node.addEventListener('click',()=>{state.selectedGroup=state.filteredGroups.find(g=>g.key===node.dataset.key);state.selectedRow=null;renderGroups();renderTimeline();renderRowDetail()}))}
-function renderTimeline(){if(!state.selectedGroup){el.timelineMeta.textContent='請先選擇左側一個群組';el.timelineList.innerHTML='<div class="empty">尚未選擇群組</div>';state.selectedGroupRows=[];return}const rows=[...state.selectedGroup.rows].sort((a,b)=>{const ta=a.parsedTime?a.parsedTime.getTime():0;const tb=b.parsedTime?b.parsedTime.getTime():0;return state.sortDesc?tb-ta:ta-tb});state.selectedGroupRows=rows;const xidText=state.selectedGroup.xrequestId||'無 xrequestId';el.timelineMeta.textContent=`${xidText}｜${rows.length} 筆 timeline`;el.timelineList.innerHTML=rows.map(row=>{const active=state.selectedRow?.id===row.id?'active':'';const chipClass=row.level==='ERROR'?'error':row.level==='WARNING'?'warn':'info';const body=el.detailMode.value==='raw'?row.message:prettyMessage(row.message);return `<div class="timeline-item ${active}" data-id="${row.id}"><div class="row1"><div style="font-weight:700">${escapeHtml(row.time||'無時間')}</div><span class="chip ${chipClass}">${escapeHtml(row.level)}</span></div><div class="row2"><span>${escapeHtml(row.container||'無 container')}</span><span>${escapeHtml(row.sourceFile||'')}</span></div><div class="content" style="padding:10px 0 0 0">${highlight(body)}</div></div>`}).join('');[...el.timelineList.querySelectorAll('.timeline-item')].forEach(node=>node.addEventListener('click',()=>{state.selectedRow=rows.find(r=>r.id===node.dataset.id);renderTimeline();renderRowDetail()}))}
-function buildMetaHtml(row){const pairs=[['時間',row.time||''],['Container',row.container||''],['Level',row.level||''],['xrequestId',row.xrequestId||''],['來源檔案',row.sourceFile||''],['可疑/問題',row.problem?'是':'否']];return `<div class="meta-grid">${pairs.map(([k,v])=>`<div class="meta-key">${escapeHtml(k)}</div><div>${escapeHtml(v)}</div>`).join('')}</div>`}
-function renderRowDetail(){if(!state.selectedRow){el.metaPane.innerHTML='<div class="empty">請先點選中間 timeline 中的一筆</div>';el.structuredPane.textContent='尚未轉換';return}el.metaPane.innerHTML=buildMetaHtml(state.selectedRow);const structured=tryParseStructured(state.selectedRow.message);el.structuredPane.textContent=structured.type==='text'?'這筆 message 沒有可格式化的 JSON/XML payload。\n\n原始內容：\n'+structured.value:structured.value}
-function exportCurrentGroup(){if(!state.selectedGroupRows.length){alert('請先選擇一個群組');return}const content=state.selectedGroupRows.map((r,idx)=>`----- [${idx+1}] ${r.time} | ${r.level} | ${r.container} | ${r.xrequestId} -----\n${r.message}`).join('\n\n');const blob=new Blob([content],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.selectedGroup?.xrequestId?`${state.selectedGroup.xrequestId}.txt`:'log_group.txt';a.click();URL.revokeObjectURL(a.href)}
-async function loadFiles(files){const newRows=[];for(const file of files){const text=await file.text();newRows.push(...parseCsvText(text,file.name))}state.rows.push(...newRows);state.groups=groupRows(state.rows);updateContainerFilter();applyFilters()}
-el.fileInput.addEventListener('change',async e=>{const files=[...(e.target.files||[])];if(!files.length)return;await loadFiles(files);e.target.value=''})
-el.clearBtn.addEventListener('click',()=>{state.rows=[];state.groups=[];state.filteredGroups=[];state.selectedGroup=null;state.selectedRow=null;state.selectedGroupRows=[];updateContainerFilter();applyFilters();renderTimeline();renderRowDetail()})
-el.exportGroupBtn.addEventListener('click',exportCurrentGroup);el.searchInput.addEventListener('input',applyFilters);el.severityFilter.addEventListener('change',applyFilters);el.containerFilter.addEventListener('change',applyFilters);el.detailMode.addEventListener('change',renderTimeline);el.sortBtn.addEventListener('click',()=>{state.sortDesc=!state.sortDesc;el.sortBtn.textContent=state.sortDesc?'時間：新 → 舊':'時間：舊 → 新';state.groups=groupRows(state.rows);applyFilters();renderTimeline();renderRowDetail()});el.showAllLogsBtn.addEventListener('click',()=>{state.showAllLogsMode=true;applyFilters()});el.showProblemBtn.addEventListener('click',()=>{state.showAllLogsMode=false;applyFilters()});el.formatBtn.addEventListener('click',()=>{if(!state.selectedRow){alert('請先在中間選一筆 timeline log');return}const structured=tryParseStructured(state.selectedRow.message);el.structuredPane.textContent=structured.type==='text'?'這筆 message 沒有可格式化的 JSON/XML payload。\n\n原始內容：\n'+structured.value:structured.value});
-renderStats();renderGroups();renderTimeline();renderRowDetail();
-</script>
+
+  <script>
+    const rawInput = document.getElementById('rawInput');
+    const prettyOutput = document.getElementById('prettyOutput');
+    const statusBadge = document.getElementById('statusBadge');
+    const formatType = document.getElementById('formatType');
+    const returnType = document.getElementById('returnType');
+    const asnNumber = document.getElementById('asnNumber');
+    const returnMessage = document.getElementById('returnMessage');
+    const summaryList = document.getElementById('summaryList');
+
+    const sampleLog = `2026-02-25 06:34:53.3714 INFO xrequestId=1a4812e6-3289-41f1-9de9-2c01ccc12bd3
+BTPIntegrations.WebApi.Controllers.BtpIntegrationController.CreateASN(173): POST Response: {d:{__metadata:{id:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/ASN_headerSet('20260225'),uri:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/ASN_headerSet('20260225'),type:Z_MM_O_DELIVERYNOTE_CREATE_SRV.ASN_header},deliveryDate:20260225,incoterms1:,incoterms2:,billOfLading:,shipTrackingNo:,estShippingDate:20260224,type:,message:,details:{results:[{__metadata:{id:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/detailsSet(poNumber='2210012373',lineItem='1'),uri:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/detailsSet(poNumber='2210012373',lineItem='1'),type:Z_MM_O_DELIVERYNOTE_CREATE_SRV.details},poNumber:2210012373,lineItem:1,shipQty:5000.000},{__metadata:{id:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/detailsSet(poNumber='2210012373',lineItem='2'),uri:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/detailsSet(poNumber='2210012373',lineItem='2'),type:Z_MM_O_DELIVERYNOTE_CREATE_SRV.details},poNumber:2210012373,lineItem:2,shipQty:5000.000}]},asnResult:{results:[{__metadata:{id:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/asnResultSet('0230170476'),uri:https://yavps4prfc:8100/sap/opu/odata/sap/Z_MM_O_DELIVERYNOTE_CREATE_SRV/asnResultSet('0230170476'),type:Z_MM_O_DELIVERYNOTE_CREATE_SRV.asnResult},messageId:,messageNumber:,returnType:S,returnMessage:成功建立出貨單,asnNumber:0230170476}]}}}`;
+
+    function setStatus(type, text) {
+      statusBadge.className = `badge ${type}`;
+      statusBadge.textContent = text;
+    }
+
+    function resetSummary() {
+      formatType.textContent = '-';
+      returnType.textContent = '-';
+      asnNumber.textContent = '-';
+      returnMessage.textContent = '-';
+      summaryList.innerHTML = '<div class="summary-item muted">尚未產生摘要。</div>';
+    }
+
+    function extractBalancedPayload(raw) {
+      const markers = ['POST Response:', 'Response:', 'Request Body:', 'Response Body:'];
+      let source = raw;
+
+      for (const marker of markers) {
+        const idx = raw.indexOf(marker);
+        if (idx !== -1) {
+          source = raw.slice(idx + marker.length).trim();
+          break;
+        }
+      }
+
+      const firstBrace = source.indexOf('{');
+      const firstBracket = source.indexOf('[');
+      let start = -1;
+
+      if (firstBrace !== -1 && firstBracket !== -1) start = Math.min(firstBrace, firstBracket);
+      else start = firstBrace !== -1 ? firstBrace : firstBracket;
+      if (start === -1) return null;
+
+      const openChar = source[start];
+      const closeChar = openChar === '{' ? '}' : ']';
+      let depth = 0;
+      let inString = false;
+      let prev = '';
+
+      for (let i = start; i < source.length; i++) {
+        const ch = source[i];
+        if (ch === '"' && prev !== '\\') inString = !inString;
+        if (!inString) {
+          if (ch === openChar) depth++;
+          if (ch === closeChar) {
+            depth--;
+            if (depth === 0) return source.slice(start, i + 1);
+          }
+        }
+        prev = ch;
+      }
+
+      return source.slice(start).trim();
+    }
+
+    function xmlToJson(node) {
+      if (node.nodeType === 3) {
+        const text = node.nodeValue.trim();
+        return text || null;
+      }
+
+      if (node.nodeType !== 1) return null;
+
+      const obj = {};
+
+      if (node.attributes && node.attributes.length > 0) {
+        obj['@attributes'] = {};
+        for (const attr of node.attributes) {
+          obj['@attributes'][attr.nodeName] = attr.nodeValue;
+        }
+      }
+
+      const childElements = Array.from(node.childNodes).filter(n => n.nodeType === 1);
+      const textNodes = Array.from(node.childNodes)
+        .filter(n => n.nodeType === 3)
+        .map(n => n.nodeValue.trim())
+        .filter(Boolean);
+
+      if (childElements.length === 0) {
+        if (textNodes.length > 0) return textNodes.join(' ');
+        return Object.keys(obj).length ? obj : null;
+      }
+
+      for (const child of childElements) {
+        const childObj = xmlToJson(child);
+        if (childObj === null) continue;
+
+        if (obj[child.nodeName] !== undefined) {
+          if (!Array.isArray(obj[child.nodeName])) obj[child.nodeName] = [obj[child.nodeName]];
+          obj[child.nodeName].push(childObj);
+        } else {
+          obj[child.nodeName] = childObj;
+        }
+      }
+
+      if (textNodes.length > 0) obj['#text'] = textNodes.join(' ');
+      return obj;
+    }
+
+    function parseXml(raw) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(raw, 'application/xml');
+      const parseError = xml.querySelector('parsererror');
+      if (parseError) throw new Error('XML parse failed');
+      return { parsed: { [xml.documentElement.nodeName]: xmlToJson(xml.documentElement) }, format: 'XML' };
+    }
+
+    function isLikelyXml(raw) {
+      return raw.trim().startsWith('<') && raw.trim().endsWith('>');
+    }
+
+    function convertBareValue(value) {
+      const v = value.trim();
+      if (v === '') return '""';
+      if (/^-?\d+(\.\d+)?$/.test(v)) return v;
+      if (/^(true|false|null)$/i.test(v)) return v.toLowerCase();
+      if (/^".*"$/.test(v)) return v;
+      if (/^'.*'$/.test(v)) return JSON.stringify(v.slice(1, -1));
+      if (/^[\[{]/.test(v)) return v;
+      return JSON.stringify(v);
+    }
+
+    function normalizePseudoJson(input) {
+      let s = input.trim();
+
+      s = s.replace(/\r?\n/g, ' ');
+      s = s.replace(/\s+/g, ' ');
+
+      // 將 key: 轉為 "key":
+      s = s.replace(/([\{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":');
+
+      // 處理空值 key:, 或 key:}
+      s = s.replace(/:\s*(?=,|\}|\])/g, ':""');
+
+      // 將 :未加引號值 轉成合法 JSON 值
+      let result = '';
+      let i = 0;
+      let inString = false;
+      let quoteChar = '';
+
+      while (i < s.length) {
+        const ch = s[i];
+        result += ch;
+
+        if ((ch === '"' || ch === "'") && s[i - 1] !== '\\') {
+          if (!inString) {
+            inString = true;
+            quoteChar = ch;
+          } else if (quoteChar === ch) {
+            inString = false;
+            quoteChar = '';
+          }
+        }
+
+        if (!inString && ch === ':') {
+          let j = i + 1;
+          while (j < s.length && /\s/.test(s[j])) j++;
+
+          if (j >= s.length) {
+            result += '""';
+            break;
+          }
+
+          const starter = s[j];
+          if (starter === '{' || starter === '[' || starter === '"') {
+            i = j - 1;
+            continue;
+          }
+
+          if (starter === "'") {
+            let k = j + 1;
+            while (k < s.length && !(s[k] === "'" && s[k - 1] !== '\\')) k++;
+            const rawVal = s.slice(j, Math.min(k + 1, s.length));
+            result += convertBareValue(rawVal);
+            i = k;
+            continue;
+          }
+
+          let k = j;
+          while (k < s.length && ![',', '}', ']'].includes(s[k])) k++;
+          const rawVal = s.slice(j, k).trim();
+          result += convertBareValue(rawVal);
+          i = k - 1;
+          continue;
+        }
+
+        i++;
+      }
+
+      return result;
+    }
+
+    function parseLoosePayload(raw) {
+      const trimmed = raw.trim();
+
+      if (isLikelyXml(trimmed)) {
+        return parseXml(trimmed);
+      }
+
+      const extracted = extractBalancedPayload(trimmed) || trimmed;
+
+      try {
+        return { parsed: JSON.parse(extracted), format: 'JSON' };
+      } catch (_) {}
+
+      try {
+        const normalized = normalizePseudoJson(extracted);
+        return { parsed: JSON.parse(normalized), format: 'Pseudo JSON / OData' };
+      } catch (err) {
+        console.error('parseLoosePayload failed', err);
+        return null;
+      }
+    }
+
+    function get(obj, path, fallback = '-') {
+      try {
+        return path.split('.').reduce((acc, key) => acc?.[key], obj) ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function statusClass(type) {
+      if (type === 'S' || type === 'SUCCESS') return 'ok';
+      if (type === 'W' || type === 'WARNING') return 'warn';
+      if (type === 'E' || type === 'ERROR') return 'err';
+      return 'info';
+    }
+
+    function renderSummary(payload, format) {
+      formatType.textContent = format;
+
+      const root = payload.d || payload;
+      const asn = root?.asnResult?.results?.[0] || {};
+      const details = root?.details?.results || [];
+
+      const rt = asn.returnType || root.returnType || '-';
+      const rm = asn.returnMessage || root.message || '-';
+      const an = asn.asnNumber || root.asnNumber || '-';
+
+      returnType.textContent = rt;
+      asnNumber.textContent = an;
+      returnMessage.textContent = rm;
+
+      const parts = [];
+      parts.push(`
+        <div class="summary-item">
+          <strong>Header</strong>
+          <div>Delivery Date: <span class="muted">${root.deliveryDate || '-'}</span></div>
+          <div>Estimated Shipping Date: <span class="muted">${root.estShippingDate || '-'}</span></div>
+          <div>Incoterms1: <span class="muted">${root.incoterms1 || '-'}</span></div>
+          <div>Incoterms2: <span class="muted">${root.incoterms2 || '-'}</span></div>
+        </div>
+      `);
+
+      parts.push(`
+        <div class="summary-item">
+          <strong>ASN Result</strong>
+          <div>Return Type: <span class="muted">${rt}</span></div>
+          <div>Return Message: <span class="muted">${rm}</span></div>
+          <div>ASN Number: <span class="muted">${an}</span></div>
+        </div>
+      `);
+
+      if (details.length > 0) {
+        details.forEach((item, idx) => {
+          parts.push(`
+            <div class="summary-item">
+              <strong>Detail ${idx + 1}</strong>
+              <div>PO Number: <span class="muted">${item.poNumber ?? '-'}</span></div>
+              <div>Line Item: <span class="muted">${item.lineItem ?? '-'}</span></div>
+              <div>Ship Qty: <span class="muted">${item.shipQty ?? '-'}</span></div>
+            </div>
+          `);
+        });
+      }
+
+      summaryList.innerHTML = parts.join('');
+      setStatus(statusClass(rt), `${format} 解析成功`);
+    }
+
+    function parseAndRender() {
+      const raw = rawInput.value.trim();
+      if (!raw) {
+        prettyOutput.textContent = '請先貼上 log 或 payload。';
+        setStatus('warn', '沒有輸入內容');
+        resetSummary();
+        return;
+      }
+
+      const result = parseLoosePayload(raw);
+      if (!result) {
+        prettyOutput.textContent = '這筆 message 沒有可格式化的 JSON/XML payload，或 pseudo JSON 轉換失敗。';
+        setStatus('err', '解析失敗');
+        resetSummary();
+        return;
+      }
+
+      prettyOutput.textContent = JSON.stringify(result.parsed, null, 2);
+      renderSummary(result.parsed, result.format);
+    }
+
+    document.getElementById('loadSampleBtn').addEventListener('click', () => {
+      rawInput.value = sampleLog;
+      parseAndRender();
+    });
+
+    document.getElementById('parseBtn').addEventListener('click', parseAndRender);
+
+    document.getElementById('extractBtn').addEventListener('click', () => {
+      const payload = extractBalancedPayload(rawInput.value.trim());
+      rawInput.value = payload || '抓不到 Response / Request Body 內的 payload。';
+    });
+
+    document.getElementById('formatRawBtn').addEventListener('click', () => {
+      rawInput.value = rawInput.value.replace(/\r?\n/g, '\n').trim();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      rawInput.value = '';
+      prettyOutput.textContent = '這裡會顯示結構化結果。';
+      setStatus('info', '尚未解析');
+      resetSummary();
+    });
+
+    document.getElementById('copyPrettyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(prettyOutput.textContent);
+        setStatus('ok', 'Pretty JSON 已複製');
+      } catch {
+        setStatus('warn', '複製失敗，請手動複製');
+      }
+    });
+  </script>
 </body>
 </html>
