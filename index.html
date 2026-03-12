@@ -77,49 +77,130 @@ function highlight(text=''){return escapeHtml(text).replace(/\bERROR\b/gi,'<span
 function normalizeLevel(level,message){const lv=(level||'').trim().toUpperCase();if(lv)return lv;const msg=(message||'').toUpperCase();if(msg.includes(' ERROR '))return'ERROR';if(msg.includes(' WARNING ')||msg.includes(' WARN '))return'WARNING';if(msg.includes(' INFO '))return'INFO';if(msg.includes(' DEBUG '))return'DEBUG';return'OTHER'}
 function extractXRequestId(row){const direct=row.xrequestId||row.XRequestId||row.requestId||row.RequestId||'';if(direct)return direct.trim();const msg=row.message||'';let m=msg.match(/\bxrequestId\s*=\s*([0-9a-fA-F\-]{8,})/i);if(m)return m[1];m=msg.match(/\brequestId\s*=\s*([0-9a-fA-F\-]{8,})/i);return m?m[1]:''}
 function parseDateFlex(text){if(!text)return null;const t=String(text).trim();const direct=Date.parse(t);if(!Number.isNaN(direct))return new Date(direct);let m=t.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)/);if(m){const d=new Date(m[1].replace(' ','T'));if(!Number.isNaN(d.getTime()))return d}m=t.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?/);if(m){let hour=Number(m[5]);if(m[4]==='下午'&&hour<12)hour+=12;if(m[4]==='上午'&&hour===12)hour=0;return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),hour,Number(m[6]),Number(m[7]),Number(m[8]||0))}return null}
-function extractBalancedPayload(text){if(!text)return'';const markers=['POST Response:','Response Body:','Response:','Request Body:'];let source=String(text);for(const marker of markers){const idx=source.indexOf(marker);if(idx!==-1){source=source.slice(idx+marker.length).trim();break}}
-  const startCandidates=[source.indexOf('{'),source.indexOf('['),source.indexOf('<')].filter(v=>v>=0);
-  if(!startCandidates.length)return'';
-  const start=Math.min(...startCandidates);
-  source=source.slice(start).trim();
-  if(source.startsWith('<')) return source;
-  const open=source[0];
-  const close=open==='{'?'}':']';
-  let depth=0,inQuote=false,quote='';
-  for(let i=0;i<source.length;i++){
-    const ch=source[i],prev=source[i-1];
-    if(inQuote){if(ch===quote&&prev!=='\\')inQuote=false;continue}
-    if(ch==='"'||ch==="'"){inQuote=true;quote=ch;continue}
-    if(ch===open)depth++;
-    if(ch===close){depth--;if(depth===0)return source.slice(0,i+1)}}
+function extractBalancedPayload(text) {
+  if (!text) return '';
+
+  const markers = [
+    'POST Response:',
+    'Response Body:',
+    'Response:',
+    'Request Body:',
+    'UpdateConfirmation Request to SAP:',
+    'CreateASN Request to SAP:',
+    'Request to SAP:'
+  ];
+
+  let source = String(text);
+  for (const marker of markers) {
+    const idx = source.indexOf(marker);
+    if (idx !== -1) {
+      source = source.slice(idx + marker.length).trim();
+      break;
+    }
+  }
+
+  const startCandidates = [source.indexOf('{'), source.indexOf('['), source.indexOf('<')].filter(v => v >= 0);
+  if (!startCandidates.length) return '';
+
+  const start = Math.min(...startCandidates);
+  source = source.slice(start).trim();
+
+  if (source.startsWith('<')) return source;
+
+  const open = source[0];
+  const close = open === '{' ? '}' : ']';
+  let depth = 0;
+  let inQuote = false;
+  let quote = '';
+
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    const prev = source[i - 1];
+
+    if (inQuote) {
+      if (ch === quote && prev !== '\') inQuote = false;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inQuote = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === open) depth++;
+    if (ch === close) {
+      depth--;
+      if (depth === 0) return source.slice(0, i + 1);
+    }
+  }
+
   return source;
 }
-function quoteKeyLikePseudoJson(s){return s.replace(/([\{\[,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g,'$1"$2":')}
-function normalizePseudoJson(input){let s=input.trim();s=quoteKeyLikePseudoJson(s);
-  const tokenRe=/:\s*([^\{\[\]\},\n\r]+)(?=\s*[,}\]])/g;
-  s=s.replace(tokenRe,(m,value)=>{
-    const v=String(value).trim();
-    if(!v)return': ""';
-    if(v.startsWith('"'))return': '+v;
-    if(v.startsWith("'"))return': '+JSON.stringify(v.slice(1,-1));
-    if(/^-?\d+(?:\.\d+)?$/.test(v))return': '+v;
-    if(/^(true|false|null)$/i.test(v))return': '+v.toLowerCase();
-    return': '+JSON.stringify(v);
+function quoteKeyLikePseudoJson(s) {
+  return s.replace(/([\{\[,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":');
+}
+function normalizePseudoJson(input) {
+  let s = input.trim();
+  s = quoteKeyLikePseudoJson(s);
+
+  s = s.replace(/:\s*(?=[,}\]])/g, ': ""');
+
+  const tokenRe = /:\s*([^\{\[\]\},
+]+)(?=\s*[,}\]])/g;
+  s = s.replace(tokenRe, (m, value) => {
+    const v = String(value).trim();
+    if (!v) return ': ""';
+    if (v.startsWith('"')) return ': ' + v;
+    if (v.startsWith("'")) return ': ' + JSON.stringify(v.slice(1, -1));
+    if (/^-?\d+(?:\.\d+)?$/.test(v)) return ': ' + v;
+    if (/^(true|false|null)$/i.test(v)) return ': ' + v.toLowerCase();
+    return ': ' + JSON.stringify(v);
   });
+
   return s;
 }
 function tryParseXml(raw){const xmlStart=raw.indexOf('<');if(xmlStart<0)return null;const candidate=raw.slice(xmlStart).trim();try{const parser=new DOMParser();const doc=parser.parseFromString(candidate,'application/xml');if(!doc.querySelector('parsererror'))return{type:'xml',value:new XMLSerializer().serializeToString(doc).replace(/></g,'>\n<'),parsed:doc,raw:candidate}}catch{}return null}
-function tryParseStructured(text){const raw=(text||'').trim();if(!raw)return{type:'text',value:'',summary:null};
-  const directCandidates=[raw,extractBalancedPayload(raw)].filter(Boolean);
-  for(const candidate of directCandidates){
-    try{const parsed=JSON.parse(candidate);return{type:'json',value:JSON.stringify(parsed,null,2),parsed,raw:candidate,summary:extractSummary(parsed,'json')}}catch{}
+function tryParseStructured(text) {
+  const raw = (text || '').trim();
+  if (!raw) return { type: 'text', value: '', summary: null };
+
+  const directCandidates = [raw, extractBalancedPayload(raw)].filter(Boolean);
+
+  for (const candidate of directCandidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      return {
+        type: 'json',
+        value: JSON.stringify(parsed, null, 2),
+        parsed,
+        raw: candidate,
+        summary: extractSummary(parsed, 'json')
+      };
+    } catch {}
   }
-  for(const candidate of directCandidates){
-    if(!(candidate.startsWith('{')||candidate.startsWith('[')))continue;
-    try{const normalized=normalizePseudoJson(candidate);const parsed=JSON.parse(normalized);return{type:'pseudo-json',value:JSON.stringify(parsed,null,2),parsed,raw:candidate,summary:extractSummary(parsed,'pseudo-json')}}catch{}
+
+  for (const candidate of directCandidates) {
+    if (!(candidate.startsWith('{') || candidate.startsWith('['))) continue;
+    try {
+      const normalized = normalizePseudoJson(candidate);
+      const parsed = JSON.parse(normalized);
+      return {
+        type: 'pseudo-json',
+        value: JSON.stringify(parsed, null, 2),
+        parsed,
+        raw: candidate,
+        summary: extractSummary(parsed, 'pseudo-json')
+      };
+    } catch {}
   }
-  for(const candidate of directCandidates){const xml=tryParseXml(candidate);if(xml)return{...xml,summary:extractSummary(xml.parsed,'xml')}}
-  return{type:'text',value:raw,summary:null};
+
+  for (const candidate of directCandidates) {
+    const xml = tryParseXml(candidate);
+    if (xml) return { ...xml, summary: extractSummary(xml.parsed, 'xml') };
+  }
+
+  return { type: 'text', value: raw, summary: null };
 }
 function prettyMessage(text){const parsed=tryParseStructured(text);if(parsed.type!=='text')return parsed.value;return String(text||'').replace(/(\bINFO\b)/g,'\n$1').replace(/(\bERROR\b)/g,'\n$1').replace(/(\bWARN(?:ING)?\b)/g,'\n$1').replace(/(Exception:)/g,'\n$1').replace(/(InnerException:)/g,'\n$1').replace(/(Handling request:)/g,'\n$1').replace(/(Handled request:)/g,'\n$1').replace(/(Request Body:)/g,'\n$1').replace(/(Response Body:)/g,'\n$1').replace(/(POST Response:)/g,'\n$1').replace(/(\/api\/)/g,'\n$1').replace(/\n{3,}/g,'\n\n').trim()}
 function splitCsvLineSmart(line){const first=line.indexOf(',');const second=line.indexOf(',',first+1);const third=line.indexOf(',',second+1);if(first===-1||second===-1||third===-1)return null;return[line.slice(0,first),line.slice(first+1,second),line.slice(second+1,third),line.slice(third+1)]}
@@ -164,7 +245,6 @@ function extractSummary(parsed, type) {
       [];
 
     const asnItem = Array.isArray(asnResults) ? first(asnResults) : asnResults;
-
     if (asnItem?.returnType) returnType = String(asnItem.returnType);
     if (asnItem?.returnMessage) returnMessage = String(asnItem.returnMessage);
     if (asnItem?.asnNumber) asnNumber = String(asnItem.asnNumber);
@@ -178,7 +258,8 @@ function extractSummary(parsed, type) {
       poSummary = asnDetails
         .slice(0, 3)
         .map(d => `${d.poNumber || '-'} / ${d.lineItem || '-'} / ${d.shipQty || '-'}`)
-        .join('\n');
+        .join('
+');
     }
 
     const poResults =
@@ -187,14 +268,11 @@ function extractSummary(parsed, type) {
       [];
 
     const poResultItem = Array.isArray(poResults) ? first(poResults) : poResults;
-
     if (poResultItem?.returnType) returnType = String(poResultItem.returnType);
     if (poResultItem?.returnMessage) returnMessage = String(poResultItem.returnMessage);
 
     const poNumber = root.poNumber || '-';
-    const poItems = Array.isArray(root.poItems)
-      ? root.poItems
-      : (getPath(root, ['poItems']) || []);
+    const poItems = Array.isArray(root.poItems) ? root.poItems : (getPath(root, ['poItems']) || []);
 
     if (Array.isArray(poItems) && poItems.length) {
       const lines = poItems.slice(0, 3).map(item => {
@@ -203,39 +281,63 @@ function extractSummary(parsed, type) {
         const qty =
           firstCfm.cofmQty ??
           firstCfm.qty ??
+          firstCfm.confirmedQty ??
           item.shipQty ??
           '-';
 
         return `${item.poNumber || poNumber || '-'} / ${item.lineItem || '-'} / ${qty}`;
       });
-
-      poSummary = lines.join('\n');
+      poSummary = lines.join('
+');
     }
 
     if (root.returnType && returnType === '-') returnType = String(root.returnType);
     if (root.message && returnMessage === '-') returnMessage = String(root.message);
   }
 
-  const statusMap = {
-    S: '成功',
-    E: '失敗',
-    W: '警告',
-    I: '資訊'
-  };
+  const statusMap = { S: '成功', E: '失敗', W: '警告', I: '資訊' };
 
   return {
     format: type === 'pseudo-json' ? 'Pseudo JSON' : 'JSON',
     status: statusMap[returnType] || returnType || '-',
     asn: asnNumber,
     po: poSummary,
-    message:
-      returnMessage && returnMessage !== '-'
-        ? returnMessage
-        : '已完成結構化解析。'
+    message: returnMessage && returnMessage !== '-' ? returnMessage : '已完成結構化解析。'
   };
 }
 function resetSummary(){el.summaryFormat.textContent='-';el.summaryStatus.textContent='-';el.summaryAsn.textContent='-';el.summaryPo.textContent='-';el.summaryMessage.textContent='尚未產生摘要。'}
-function renderRowDetail(forceFormat=false){if(!state.selectedRow){el.metaPane.innerHTML='<div class="empty">請先點選中間 timeline 中的一筆</div>';el.structuredPane.textContent='尚未轉換';state.lastStructured=null;resetSummary();return}el.metaPane.innerHTML=buildMetaHtml(state.selectedRow);const structured=tryParseStructured(state.selectedRow.message);state.lastStructured=structured;if(structured.summary){el.summaryFormat.textContent=structured.summary.format;el.summaryStatus.textContent=structured.summary.status;el.summaryAsn.textContent=structured.summary.asn;el.summaryPo.textContent=structured.summary.po;el.summaryMessage.textContent=structured.summary.message}else resetSummary();el.structuredPane.textContent=structured.type==='text'?(forceFormat?'這筆 message 沒有可格式化的 JSON/XML/pseudo JSON payload。\n\n原始內容：\n'+structured.value:'這筆 message 目前顯示原始文字。可按「選中單筆轉 JSON/XML」再試一次。\n\n原始內容：\n'+structured.value):structured.value}
+function renderRowDetail(forceFormat=false){
+  if(!state.selectedRow){
+    el.metaPane.innerHTML='<div class="empty">請先點選中間 timeline 中的一筆</div>';
+    el.structuredPane.textContent='尚未轉換';
+    state.lastStructured=null;
+    resetSummary();
+    return;
+  }
+
+  el.metaPane.innerHTML=buildMetaHtml(state.selectedRow);
+  const structured=tryParseStructured(state.selectedRow.message);
+  state.lastStructured=structured;
+
+  if(structured.summary){
+    el.summaryFormat.textContent=structured.summary.format || '-';
+    el.summaryStatus.textContent=structured.summary.status || '-';
+    el.summaryAsn.textContent=structured.summary.asn || '-';
+    el.summaryPo.textContent=structured.summary.po || '-';
+    el.summaryMessage.textContent=structured.summary.message || '-';
+  }else{
+    resetSummary();
+  }
+
+  if(structured.type==='text'){
+    el.structuredPane.textContent='這筆 message 目前無法自動結構化，以下顯示原始內容：
+
+'+structured.value;
+    return;
+  }
+
+  el.structuredPane.textContent=structured.value;
+}
 function exportCurrentGroup(){if(!state.selectedGroupRows.length){alert('請先選擇一個群組');return}const content=state.selectedGroupRows.map((r,idx)=>`----- [${idx+1}] ${r.time} | ${r.level} | ${r.container} | ${r.xrequestId} -----\n${r.message}`).join('\n\n');const blob=new Blob([content],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.selectedGroup?.xrequestId?`${state.selectedGroup.xrequestId}.txt`:'log_group.txt';a.click();URL.revokeObjectURL(a.href)}
 async function loadFiles(files){const newRows=[];for(const file of files){const text=await file.text();newRows.push(...parseCsvText(text,file.name))}state.rows.push(...newRows);state.groups=groupRows(state.rows);updateContainerFilter();applyFilters()}
 el.fileInput.addEventListener('change',async e=>{const files=[...(e.target.files||[])];if(!files.length)return;await loadFiles(files);e.target.value=''})
