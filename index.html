@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Log Viewer Web App v2.3</title>
+  <title>Log Viewer Web App v2.6</title>
   <style>
     :root{--bg:#0b1020;--panel:#121932;--panel2:#1a2447;--border:#2d3b73;--text:#e8ecff;--muted:#9fb0ea;--accent:#6ea8fe;--danger:#ff6b6b;--warn:#f7b955;--ok:#63d297;--chip:#24325f;--active:#23356b;--btnActive:#3a5fd0}
     *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
@@ -26,7 +26,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div><div class="title">Log Viewer Web App v2.3</div><div class="sub">保留 CSV 載入、xrequestId 群組與 timeline；中間固定顯示 Raw，右側自動 Pretty 結構化解析。</div></div>
+    <div><div class="title">Log Viewer Web App v2.6</div><div class="sub">保留 CSV 載入、xrequestId 群組與 timeline；中間固定顯示 Raw，右側自動 Pretty 結構化解析。</div></div>
     <label class="file-btn" for="fileInput">載入 CSV</label><button id="clearBtn">清空資料</button><button id="exportGroupBtn">匯出目前群組</button><input id="fileInput" type="file" accept=".csv" multiple />
   </div>
   <div class="toolbar">
@@ -118,7 +118,7 @@ function extractBalancedPayload(text) {
     const prev = source[i - 1];
 
     if (inQuote) {
-      if (ch === quote && prev !== '\') inQuote = false;
+      if (ch === quote && prev !== '\\') inQuote = false;
       continue;
     }
 
@@ -146,8 +146,7 @@ function normalizePseudoJson(input) {
 
   s = s.replace(/:\s*(?=[,}\]])/g, ': ""');
 
-  const tokenRe = /:\s*([^\{\[\]\},
-]+)(?=\s*[,}\]])/g;
+  const tokenRe = /:\s*([^\{\[\]\},\n]+)(?=\s*[,}\]])/g;
   s = s.replace(tokenRe, (m, value) => {
     const v = String(value).trim();
     if (!v) return ': ""';
@@ -258,8 +257,7 @@ function extractSummary(parsed, type) {
       poSummary = asnDetails
         .slice(0, 3)
         .map(d => `${d.poNumber || '-'} / ${d.lineItem || '-'} / ${d.shipQty || '-'}`)
-        .join('
-');
+        .join('\n');
     }
 
     const poResults =
@@ -287,8 +285,7 @@ function extractSummary(parsed, type) {
 
         return `${item.poNumber || poNumber || '-'} / ${item.lineItem || '-'} / ${qty}`;
       });
-      poSummary = lines.join('
-');
+      poSummary = lines.join('\n');
     }
 
     if (root.returnType && returnType === '-') returnType = String(root.returnType);
@@ -330,9 +327,7 @@ function renderRowDetail(forceFormat=false){
   }
 
   if(structured.type==='text'){
-    el.structuredPane.textContent='這筆 message 目前無法自動結構化，以下顯示原始內容：
-
-'+structured.value;
+    el.structuredPane.textContent = '這筆 message 目前無法自動結構化，以下顯示原始內容：\n\n' + structured.value;
     return;
   }
 
